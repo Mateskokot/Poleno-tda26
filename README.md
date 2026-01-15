@@ -3,7 +3,9 @@
 ## Tým
 - **Název týmu:** Poleno
 - **Členové a role:**
-  - Matyáš Neckář – backend & frontend (full‑stack)
+  - Matyáš Neckář – backend & frontend 
+  - anotnín mráz -kontrola ověření docker coookies
+  - daniel herkus - podpora grafické zpracování
 
 ## Použité technologie
 - Java 17
