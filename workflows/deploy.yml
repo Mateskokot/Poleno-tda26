@@ -1,0 +1,16 @@
+name: Build and upload to Tour de Cloud
+
+on:
+  push:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload to TdA
+        uses: Student-Cyber-Games/upload-app@tda-26
+        with:
+          tdc_token: ${{ secrets.TDC_TOKEN }}
