@@ -1,12 +1,13 @@
-# Tour de App – Think Different Academy (verze 14.6)
+# Tour de App – Think Different Academy
 
-## Tým
+Tým
 - **Název týmu:** Poleno
-- **Členové a role:**
-  - Matyáš Neckář – backend & frontend (full‑stack)
+Matyaě Neckař html style kominikace github
+Anotní Mráz Backend testy cookie
+Daniel Herkus
 
 ## Použité technologie
-- Java 17
+- Java 21
 - Spring Boot 3.2.1
 - Maven
 - H2 Database (file‑based, perzistentní mezi restartem)
@@ -14,7 +15,7 @@
 
 ## Jak aplikaci spustit
 ### Požadavky
-- JDK 17+
+- JDK 21
 - Maven
 
 ### Spuštění (lokálně)
