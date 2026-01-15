@@ -9,5 +9,5 @@ if not exist uploads (
   mkdir uploads
 )
 
-mvnw.cmd clean spring-boot:run
+mvnw.cmd spring-boot:run
 

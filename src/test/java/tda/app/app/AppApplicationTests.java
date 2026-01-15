@@ -1,12 +1,13 @@
 package tda.app.app;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
-import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 
-@RestController
-public class ApiController {
+@SpringBootTest
+class AppApplicationTests {
 
-    @GetMapping({"/api", "/api/"})
-    public Map<String, String> apiRoot() {
-        return Map.of("organization", "Student Cyber Games");
+	@Test
+	void contextLoads() {
+	}
+
+}

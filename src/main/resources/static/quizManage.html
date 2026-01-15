@@ -11,9 +11,9 @@
 
 <header class="topbar">
   <div class="topbar__inner">
-    <a class="logo-link" href="/indexlec"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+    <a class="logo-link" href="/indexlec.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
       <a class="nav__link" id="backToCourse" href="#">Zpět na správu kurzu</a>
-      <a class="nav__link" href="/dashboardLec">Dashboard</a>
+      <a class="nav__link" href="/dashboardLec.html">Dashboard</a>
       <a class="nav__link nav__link--button" href="#" id="logoutBtn">Odhlásit</a>
     </nav>
   </div>
@@ -33,6 +33,13 @@
       <button type="submit">Uložit název</button>
       <p id="titleMsg" class="small"></p>
     </form>
+
+    <div style="margin-top:14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+      <div class="small" style="opacity:.85;">Stav: <strong id="statusLabel">—</strong></div>
+      <button type="button" id="openQuizBtn">Otevřít</button>
+      <button type="button" id="closeQuizBtn">Uzavřít</button>
+      <span class="small" id="statusMsg" style="opacity:.85;"></span>
+    </div>
   </section>
 
   <section class="card" style="margin-top:16px;">
@@ -87,7 +94,7 @@ function getToken() {
 
 function requireLogin() {
   if (!getToken()) {
-    location.href = "/loginLec";
+    location.href = "/loginLec.html";
     return false;
   }
   return true;
@@ -343,10 +350,63 @@ async function loadResults(courseId, quizId) {
   });
 }
 
+async function updateQuizStatus(courseId, quizId, status) {
+  return await fetchJson(`/api/courses/${encodeURIComponent(courseId)}/quizzes/${encodeURIComponent(quizId)}/status`, {
+    method: "PUT",
+    headers: {
+      "Authorization": "Bearer " + getToken(),
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ status })
+  });
+}
+
+function setStatusUi(status) {
+  const st = String(status || "OPEN").toUpperCase();
+  const label = document.getElementById("statusLabel");
+  const openBtn = document.getElementById("openQuizBtn");
+  const closeBtn = document.getElementById("closeQuizBtn");
+  if (label) label.textContent = (st === "CLOSED") ? "UZAVŘEN" : "OTEVŘEN";
+  if (openBtn) openBtn.disabled = (st === "OPEN");
+  if (closeBtn) closeBtn.disabled = (st === "CLOSED");
+}
+
 document.getElementById("logoutBtn").addEventListener("click", (e) => {
   e.preventDefault();
   localStorage.removeItem(TOKEN_KEY);
-  location.href = "/loginLec";
+  location.href = "/loginLec.html";
+});
+
+document.getElementById("openQuizBtn").addEventListener("click", async () => {
+  if (!requireLogin()) return;
+  const courseId = qp("courseId");
+  const quizId = qp("quizId");
+  const msg = document.getElementById("statusMsg");
+  msg.textContent = "Ukládám…";
+  try {
+    const q = await updateQuizStatus(courseId, quizId, "OPEN");
+    setStatusUi(q.status);
+    msg.textContent = "Kvíz je otevřený.";
+  } catch (ex) {
+    msg.textContent = ex?.message || "Chyba.";
+    if (String(ex?.message || "") === "Unauthorized") location.href = "/loginLec.html";
+  }
+});
+
+document.getElementById("closeQuizBtn").addEventListener("click", async () => {
+  if (!requireLogin()) return;
+  const courseId = qp("courseId");
+  const quizId = qp("quizId");
+  const msg = document.getElementById("statusMsg");
+  msg.textContent = "Ukládám…";
+  try {
+    const q = await updateQuizStatus(courseId, quizId, "CLOSED");
+    setStatusUi(q.status);
+    msg.textContent = "Kvíz je uzavřený.";
+  } catch (ex) {
+    msg.textContent = ex?.message || "Chyba.";
+    if (String(ex?.message || "") === "Unauthorized") location.href = "/loginLec.html";
+  }
 });
 
 document.getElementById("addOptionBtn").addEventListener("click", () => addOption());
@@ -381,7 +441,7 @@ document.getElementById("titleForm").addEventListener("submit", async (e) => {
     document.getElementById("pageTitle").textContent = `Správa kvízu: ${updated.title || ""}`;
   } catch (ex) {
     msg.textContent = ex?.message || "Chyba.";
-    if (String(ex?.message || "") === "Unauthorized") location.href = "/loginLec";
+    if (String(ex?.message || "") === "Unauthorized") location.href = "/loginLec.html";
   }
 });
 
@@ -417,7 +477,7 @@ document.getElementById("questionForm").addEventListener("submit", async (e) => 
   } catch (ex) {
     msg.textContent = "";
     if (String(ex?.message || "") === "Unauthorized") {
-      location.href = "/loginLec";
+      location.href = "/loginLec.html";
       return;
     }
     setErr(ex?.message || "Chyba.");
@@ -466,7 +526,7 @@ document.getElementById("questionsList").addEventListener("click", async (e) => 
     }
   } catch (ex) {
     if (String(ex?.message || "") === "Unauthorized") {
-      location.href = "/loginLec";
+      location.href = "/loginLec.html";
       return;
     }
     setErr(ex?.message || "Chyba.");
@@ -483,13 +543,14 @@ document.getElementById("questionsList").addEventListener("click", async (e) => 
     return;
   }
 
-  document.getElementById("backToCourse").href = `/courseLec?id=${encodeURIComponent(courseId)}`;
+  document.getElementById("backToCourse").href = `/courseLec.html?id=${encodeURIComponent(courseId)}`;
 
   try {
     resetQuestionForm();
     const quiz = await loadFullQuiz(courseId, quizId);
     document.getElementById("pageTitle").textContent = `Správa kvízu: ${quiz.title || ""}`;
     document.querySelector("#titleForm input[name='title']").value = quiz.title || "";
+    setStatusUi(quiz.status);
     renderQuestions(quiz);
 
     const results = await loadResults(courseId, quizId);
@@ -500,7 +561,7 @@ document.getElementById("questionsList").addEventListener("click", async (e) => 
     }
   } catch (ex) {
     if (String(ex?.message || "") === "Unauthorized") {
-      location.href = "/loginLec";
+      location.href = "/loginLec.html";
       return;
     }
     setErr(ex?.message || "Chyba při načítání.");

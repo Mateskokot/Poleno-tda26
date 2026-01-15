@@ -8,5 +8,6 @@ public record Quiz(
         String courseId,
         String title,
         Instant createdAt,
-        List<QuizQuestion> questions
+        List<QuizQuestion> questions,
+        QuizStatus status
 ) {}

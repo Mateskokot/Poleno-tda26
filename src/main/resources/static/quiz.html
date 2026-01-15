@@ -11,9 +11,9 @@
 
 <header class="topbar">
   <div class="topbar__inner">
-    <a class="logo-link" href="/index"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+    <a class="logo-link" href="/index.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
       <a class="nav__link" id="backLink" href="#">Zpět na kurz</a>
-      <a class="nav__link" href="/index">Domů</a>
+      <a class="nav__link" href="/index.html">Domů</a>
     </nav>
   </div>
 </header>
@@ -21,6 +21,16 @@
 <main class="container">
   <h1 id="title">Kvíz</h1>
   <p id="err" class="small" style="color:#ff6b6b;"></p>
+
+  <section class="card" id="myResultsCard" style="margin-bottom:16px;" hidden>
+    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+      <h2 style="margin:0;">Moje výsledky</h2>
+      <button type="button" id="refreshMyResultsBtn">Obnovit</button>
+    </div>
+    <p id="myResultsSummary" class="small" style="margin-top:8px; opacity:.9;">—</p>
+    <div id="myResultsList" class="small" style="margin-top:10px;"></div>
+    <p class="small" style="margin-top:10px; opacity:.75;">Poznámka: Historie vašich pokusů se ukládá lokálně v tomto prohlížeči, takže je uvidíte i po uzavření kvízu (dokud nesmažete data prohlížeče).</p>
+  </section>
 
   <section class="card" id="quizCard">
     <p class="small">Načítám…</p>
@@ -33,6 +43,8 @@
 </main>
 
 <script>
+const ATTEMPTS_PREFIX = "tda_quiz_attempts";
+
 function qp(name) {
   return new URLSearchParams(location.search).get(name);
 }
@@ -48,6 +60,37 @@ function esc(s) {
 
 function setErr(msg) {
   document.getElementById("err").textContent = msg || "";
+}
+
+function attemptsKey(courseId, quizId) {
+  return `${ATTEMPTS_PREFIX}:${courseId}:${quizId}`;
+}
+
+function loadAttempts(courseId, quizId) {
+  try {
+    const raw = localStorage.getItem(attemptsKey(courseId, quizId));
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAttempts(courseId, quizId, list) {
+  const safe = Array.isArray(list) ? list.slice(0, 100) : [];
+  localStorage.setItem(attemptsKey(courseId, quizId), JSON.stringify(safe));
+}
+
+function addAttempt(courseId, quizId, resp) {
+  const list = loadAttempts(courseId, quizId);
+  list.unshift({
+    submittedAt: new Date().toISOString(),
+    totalQuestions: Number(resp?.totalQuestions || 0),
+    correctQuestions: Number(resp?.correctQuestions || 0),
+    scorePercent: Number(resp?.scorePercent || 0)
+  });
+  saveAttempts(courseId, quizId, list);
+  return list;
 }
 
 async function fetchJson(url, opts) {
@@ -70,6 +113,9 @@ async function fetchJson(url, opts) {
 function buildForm(quiz) {
   const root = document.getElementById("quizCard");
 
+  const quizStatus = String(quiz?.status || "OPEN").toUpperCase();
+  const isClosed = quizStatus === "CLOSED";
+
   if (!quiz || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
     root.innerHTML = `
       <p class="small"><em>Tento kvíz zatím nemá žádné otázky.</em></p>
@@ -80,6 +126,14 @@ function buildForm(quiz) {
   const form = document.createElement("form");
   form.className = "form";
   form.id = "quizForm";
+
+  if (isClosed) {
+    const banner = document.createElement("div");
+    banner.className = "card";
+    banner.style.marginTop = "0";
+    banner.innerHTML = `<strong>Kvíz je uzavřený.</strong><div class="small" style="margin-top:6px; opacity:.85;">Nový pokus už nelze odevzdat, ale své výsledky uvidíte výše.</div>`;
+    form.appendChild(banner);
+  }
 
   quiz.questions.forEach((q, idx) => {
     const card = document.createElement("div");
@@ -123,17 +177,23 @@ function buildForm(quiz) {
   const btn = document.createElement("button");
   btn.type = "submit";
   btn.textContent = "Odeslat";
+  btn.disabled = isClosed;
   btn.style.marginTop = "12px";
   form.appendChild(btn);
 
-  const status = document.createElement("p");
-  status.id = "submitStatus";
-  status.className = "small";
-  status.style.marginTop = "8px";
-  form.appendChild(status);
+  const submitStatusEl = document.createElement("p");
+  submitStatusEl.id = "submitStatus";
+  submitStatusEl.className = "small";
+  submitStatusEl.style.marginTop = "8px";
+  form.appendChild(submitStatusEl);
 
   root.innerHTML = "";
   root.appendChild(form);
+
+  if (isClosed) {
+    // pro uzavřený kvíz zakážeme klikání do otázek (jen zobrazení)
+    root.querySelectorAll("input").forEach(i => i.disabled = true);
+  }
 }
 
 function collectAnswers(quiz) {
@@ -204,6 +264,44 @@ function markAnswers(resp) {
   });
 }
 
+function renderMyResults(list) {
+  const card = document.getElementById("myResultsCard");
+  const summaryEl = document.getElementById("myResultsSummary");
+  const root = document.getElementById("myResultsList");
+  const rows = Array.isArray(list) ? list : [];
+
+  card.hidden = false;
+
+  const attempts = rows.length;
+  let avg = 0;
+  let best = 0;
+  if (attempts > 0) {
+    const percents = rows.map(r => Number(r.scorePercent || 0));
+    avg = percents.reduce((a, b) => a + b, 0) / attempts;
+    best = Math.max(...percents);
+  }
+
+  summaryEl.textContent = `Pokusů: ${attempts} • Průměr: ${avg.toFixed(1)}% • Nejlepší: ${best.toFixed(1)}%`;
+
+  if (attempts === 0) {
+    root.innerHTML = "<em>Zatím nemáte žádné pokusy.</em>";
+    return;
+  }
+
+  root.innerHTML = rows.map(r => {
+    const when = r.submittedAt ? new Date(r.submittedAt).toLocaleString("cs-CZ") : "";
+    const t = Number(r.totalQuestions || 0);
+    const c = Number(r.correctQuestions || 0);
+    const p = Number(r.scorePercent || (t > 0 ? (c * 100.0 / t) : 0));
+    return `• ${esc(when)} – ${c}/${t} (${p.toFixed(1)}%)`;
+  }).join("<br>");
+}
+
+function refreshMyResults(courseId, quizId) {
+  const list = loadAttempts(courseId, quizId);
+  renderMyResults(list);
+}
+
 (async () => {
   const courseId = qp("courseId");
   const quizId = qp("quizId");
@@ -214,15 +312,27 @@ function markAnswers(resp) {
     return;
   }
 
-  document.getElementById("backLink").href = `/courseDetail?id=${encodeURIComponent(courseId)}`;
+  document.getElementById("backLink").href = `/courseDetail.html?id=${encodeURIComponent(courseId)}`;
 
   try {
     const quiz = await fetchJson(`/api/courses/${encodeURIComponent(courseId)}/quizzes/${encodeURIComponent(quizId)}`);
     document.getElementById("title").textContent = quiz.title ? `Kvíz: ${quiz.title}` : "Kvíz";
     buildForm(quiz);
 
+    // Moje výsledky – ukládáme lokálně do prohlížeče (bez serverové identifikace)
+    const refreshBtn = document.getElementById("refreshMyResultsBtn");
+    const refresh = () => refreshMyResults(courseId, quizId);
+    if (refreshBtn) refreshBtn.addEventListener("click", refresh);
+    refresh();
+
     const form = document.getElementById("quizForm");
     if (!form) return;
+
+    const status = String(quiz?.status || "OPEN").toUpperCase();
+    if (status === "CLOSED") {
+      // uzavřený kvíz – žádné odevzdání
+      return;
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -241,6 +351,8 @@ function markAnswers(resp) {
         if (status) status.textContent = "Hotovo.";
         showResult(resp);
         markAnswers(resp);
+        addAttempt(courseId, quizId, resp);
+        refresh();
       } catch (ex) {
         if (status) status.textContent = "";
         setErr(ex?.message || "Chyba při odeslání.");

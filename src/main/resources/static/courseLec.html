@@ -10,9 +10,9 @@
 
 <header class="topbar">
   <div class="topbar__inner">
-    <a class="logo-link" href="/indexlec"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
-      <a class="nav__link" href="/dashboardLec">Zpět na dashboard</a>
-      <a class="nav__link" href="/indexlec">Domů</a>
+    <a class="logo-link" href="/indexlec.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+      <a class="nav__link" href="/dashboardLec.html">Zpět na dashboard</a>
+      <a class="nav__link" href="/indexlec.html">Domů</a>
       <a class="nav__link nav__link--button" href="#" id="logoutBtn">Odhlásit</a>
     </nav>
   </div>
@@ -40,7 +40,7 @@
 
       <label>
         Soubor
-        <input type="file" name="file" required>
+        <input type="file" name="file" multiple required>
       </label>
 
       <button type="submit">Nahrát</button>
@@ -88,7 +88,7 @@ function token() {
 }
 
 function requireLogin() {
-  if (!token()) location.href = "/loginLec";
+  if (!token()) location.href = "/loginLec.html";
 }
 
 function courseId() {
@@ -318,11 +318,11 @@ document.getElementById("quizList").addEventListener("click", async (e) => {
 
   try {
     if (action === "manage") {
-      location.href = `/quizManage?courseId=${encodeURIComponent(id)}&quizId=${encodeURIComponent(quizId)}`;
+      location.href = `/quizManage.html?courseId=${encodeURIComponent(id)}&quizId=${encodeURIComponent(quizId)}`;
       return;
     }
     if (action === "results") {
-      location.href = `/quizManage?courseId=${encodeURIComponent(id)}&quizId=${encodeURIComponent(quizId)}#results`;
+      location.href = `/quizManage.html?courseId=${encodeURIComponent(id)}&quizId=${encodeURIComponent(quizId)}#results`;
       return;
     }
     if (action === "delete") {
@@ -476,30 +476,47 @@ function setupFeedSse(id) {
 document.getElementById("logoutBtn").addEventListener("click", (e) => {
   e.preventDefault();
   localStorage.removeItem(TOKEN_KEY);
-  location.href = "/index";
+  location.href = "/index.html";
 });
 
 document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const msg = document.getElementById("uploadMsg");
-  msg.textContent = "Nahrávám...";
 
   const id = courseId();
-  const fd = new FormData(e.target);
+  const form = e.target;
+
+  const baseTitle = (form.querySelector('input[name="title"]')?.value || "").toString().trim();
+  const description = (form.querySelector('input[name="description"]')?.value || "").toString().trim();
+  const files = Array.from(form.querySelector('input[name="file"]')?.files || []);
+
+  if (!files.length) {
+    msg.textContent = "Vyber soubor.";
+    return;
+  }
 
   try {
-    await uploadMaterial(id, fd);
-    msg.textContent = "Hotovo.";
-    e.target.reset();
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      msg.textContent = (files.length === 1) ? "Nahrávám..." : `Nahrávám ${i + 1}/${files.length}...`;
+
+      const fd = new FormData();
+      fd.append("title", baseTitle ? (files.length === 1 ? baseTitle : `${baseTitle} – ${f.name}`) : f.name);
+      if (description) fd.append("description", description);
+      fd.append("file", f);
+
+      await uploadMaterial(id, fd);
+    }
+
+    msg.textContent = (files.length === 1) ? "Hotovo." : `Hotovo. Nahráno ${files.length} souborů.`;
+    form.reset();
 
     const items = await loadMaterials(id);
     renderMaterials(items);
   } catch (err) {
-    console.error(err);
-    msg.textContent = err?.message || "Chyba při nahrávání.";
+    msg.textContent = "Chyba: " + (err?.message || "neznámá");
   }
 });
-
 (async () => {
   requireLogin();
 

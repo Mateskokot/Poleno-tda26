@@ -12,8 +12,8 @@
 
 <header class="topbar">
   <div class="topbar__inner">
-    <a class="logo-link" href="/index"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
-      <a class="nav__link" href="/index">Domů</a>
+    <a class="logo-link" href="/index.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+      <a class="nav__link" href="/index.html">Domů</a>
     </nav>
   </div>
 </header>
@@ -50,7 +50,7 @@ async function loadCourses() {
    ========================= */
 function openDetail(courseId) {
   window.location.assign(
-    `/courseDetail?id=${encodeURIComponent(courseId)}`
+    `/courseDetail.html?id=${encodeURIComponent(courseId)}`
   );
 }
 

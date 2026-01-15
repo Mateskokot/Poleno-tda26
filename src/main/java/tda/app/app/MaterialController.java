@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.*;
 import java.time.Instant;
 import java.util.*;
@@ -109,6 +110,9 @@ public class MaterialController {
             url = "https://" + url;
         }
 
+        // Fáze 2 – favicon pro odkazy
+        String favicon = faviconFromUrl(url);
+
         Material m = new Material(
                 UUID.randomUUID().toString(),
                 courseId,
@@ -117,7 +121,7 @@ public class MaterialController {
                 description,
                 Instant.now(),
                 url,
-                null,
+                favicon,
                 null,
                 null,
                 null,
@@ -181,6 +185,8 @@ public class MaterialController {
                     newUrl = "https://" + newUrl;
                 }
 
+                String newFavicon = faviconFromUrl(newUrl);
+
                 updated = new Material(
                         old.id(),
                         old.courseId(),
@@ -189,7 +195,7 @@ public class MaterialController {
                         newDesc,
                         old.createdAt(),
                         newUrl,
-                        old.faviconUrl(),
+                        newFavicon,
                         null,
                         null,
                         null,
@@ -387,6 +393,26 @@ public class MaterialController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    private static String faviconFromUrl(String url) {
+        if (url == null) return null;
+        String u = url.trim();
+        if (u.isEmpty()) return null;
+        try {
+            URI uri = URI.create(u);
+            String scheme = (uri.getScheme() == null || uri.getScheme().isBlank()) ? "https" : uri.getScheme();
+            String host = uri.getHost();
+
+            // URI.getHost() může být null u některých vstupů; v takovém případě favicon nevyplňujeme.
+            if (host == null || host.isBlank()) return null;
+
+            int port = uri.getPort();
+            String base = scheme + "://" + host + (port > 0 ? (":" + port) : "");
+            return base + "/favicon.ico";
+        } catch (Exception _ignored) {
+            return null;
         }
     }
 

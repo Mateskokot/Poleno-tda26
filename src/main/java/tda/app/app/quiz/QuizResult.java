@@ -8,5 +8,6 @@ public record QuizResult(
         String quizId,
         Instant submittedAt,
         int totalQuestions,
-        int correctQuestions
+        int correctQuestions,
+        String studentKey
 ) {}

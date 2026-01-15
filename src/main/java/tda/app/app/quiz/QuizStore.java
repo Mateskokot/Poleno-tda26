@@ -20,7 +20,8 @@ public class QuizStore {
             String id,
             String title,
             Instant createdAt,
-            int filledCount
+            int filledCount,
+            QuizStatus status
     ) {}
 
     public record PublicQuizDto(
@@ -28,7 +29,8 @@ public class QuizStore {
             String courseId,
             String title,
             Instant createdAt,
-            List<PublicQuestionDto> questions
+            List<PublicQuestionDto> questions,
+            QuizStatus status
     ) {}
 
     public record PublicQuestionDto(
@@ -71,7 +73,8 @@ public class QuizStore {
                             q.id(),
                             q.title(),
                             q.createdAt(),
-                            resultsByQuiz.getOrDefault(q.id(), List.of()).size()
+                            resultsByQuiz.getOrDefault(q.id(), List.of()).size(),
+                            statusOrOpen(q)
                     ))
                     .toList();
         }
@@ -83,7 +86,7 @@ public class QuizStore {
                 .stream()
                 .map(qq -> new PublicQuestionDto(qq.id(), qq.type(), qq.text(), qq.options() == null ? List.of() : qq.options()))
                 .toList();
-        return new PublicQuizDto(q.id(), q.courseId(), q.title(), q.createdAt(), questions);
+        return new PublicQuizDto(q.id(), q.courseId(), q.title(), q.createdAt(), questions, statusOrOpen(q));
     }
 
     public Quiz getFullQuiz(String courseId, String quizId) {
@@ -99,7 +102,8 @@ public class QuizStore {
                 courseId,
                 t,
                 Instant.now(),
-                new ArrayList<>()
+                new ArrayList<>(),
+                QuizStatus.OPEN
         );
 
         synchronized (quizzesByCourse) {
@@ -118,7 +122,7 @@ public class QuizStore {
             int idx = indexOfQuiz(list, quizId);
             if (idx < 0) throw new IllegalArgumentException("Kvíz nebyl nalezen.");
             Quiz old = list.get(idx);
-            Quiz updated = new Quiz(old.id(), old.courseId(), t, old.createdAt(), old.questions());
+            Quiz updated = new Quiz(old.id(), old.courseId(), t, old.createdAt(), old.questions(), statusOrOpen(old));
             list.set(idx, updated);
             quizzesByCourse.put(courseId, list);
             save();
@@ -167,7 +171,7 @@ public class QuizStore {
                 qs.set(qIdx, normalized);
             }
 
-            Quiz updated = new Quiz(old.id(), old.courseId(), old.title(), old.createdAt(), qs);
+            Quiz updated = new Quiz(old.id(), old.courseId(), old.title(), old.createdAt(), qs, statusOrOpen(old));
             list.set(idx, updated);
             quizzesByCourse.put(courseId, list);
             save();
@@ -185,7 +189,24 @@ public class QuizStore {
             int qIdx = indexOfQuestion(qs, questionId);
             if (qIdx < 0) throw new IllegalArgumentException("Otázka nebyla nalezena.");
             qs.remove(qIdx);
-            Quiz updated = new Quiz(old.id(), old.courseId(), old.title(), old.createdAt(), qs);
+            Quiz updated = new Quiz(old.id(), old.courseId(), old.title(), old.createdAt(), qs, statusOrOpen(old));
+            list.set(idx, updated);
+            quizzesByCourse.put(courseId, list);
+            save();
+            return updated;
+        }
+    }
+
+    public record StatusRequest(QuizStatus status) {}
+
+    public Quiz updateStatus(String courseId, String quizId, QuizStatus status) throws IOException {
+        if (status == null) throw new IllegalArgumentException("Chybí status.");
+        synchronized (quizzesByCourse) {
+            List<Quiz> list = new ArrayList<>(quizzesByCourse.getOrDefault(courseId, List.of()));
+            int idx = indexOfQuiz(list, quizId);
+            if (idx < 0) throw new IllegalArgumentException("Kvíz nebyl nalezen.");
+            Quiz old = list.get(idx);
+            Quiz updated = new Quiz(old.id(), old.courseId(), old.title(), old.createdAt(), old.questions(), status);
             list.set(idx, updated);
             quizzesByCourse.put(courseId, list);
             save();
@@ -209,8 +230,11 @@ public class QuizStore {
             List<String> selectedOptionIds
     ) {}
 
-    public SubmitResponse submit(String courseId, String quizId, SubmitRequest req) throws IOException {
+    public SubmitResponse submit(String courseId, String quizId, SubmitRequest req, String studentKey) throws IOException {
         Quiz quiz = getQuizOrThrow(courseId, quizId);
+        if (statusOrOpen(quiz) == QuizStatus.CLOSED) {
+            throw new IllegalArgumentException("Kvíz je uzavřený. Nový pokus nelze odevzdat.");
+        }
 
         Map<String, List<String>> answers = (req == null || req.answers() == null) ? Map.of() : req.answers();
         List<QuizQuestion> questions = quiz.questions() == null ? List.of() : quiz.questions();
@@ -242,7 +266,8 @@ public class QuizStore {
                 quizId,
                 Instant.now(),
                 total,
-                correct
+                correct,
+                (studentKey == null || studentKey.isBlank()) ? null : studentKey
         );
 
         synchronized (quizzesByCourse) {
@@ -253,15 +278,29 @@ public class QuizStore {
         return new SubmitResponse(total, correct, Math.round(percent * 10.0) / 10.0, details);
     }
 
-    public List<QuizResult> results(String courseId, String quizId) {
+    public record TeacherAttemptDto(
+            String id,
+            String courseId,
+            String quizId,
+            Instant submittedAt,
+            int totalQuestions,
+            int correctQuestions
+    ) {}
+
+    public List<TeacherAttemptDto> results(String courseId, String quizId) {
         // courseId is checked only for safety (quiz must exist in that course)
         getQuizOrThrow(courseId, quizId);
         synchronized (quizzesByCourse) {
             List<QuizResult> list = new ArrayList<>(resultsByQuiz.getOrDefault(quizId, List.of()));
             list.sort((a, b) -> b.submittedAt().compareTo(a.submittedAt()));
-            return list;
+            return list.stream()
+                    .map(r -> new TeacherAttemptDto(r.id(), r.courseId(), r.quizId(), r.submittedAt(), r.totalQuestions(), r.correctQuestions()))
+                    .toList();
         }
     }
+
+    // Pozn.: požadavek zadání: výsledky jsou dostupné pouze lektorovi.
+    // Studentům zobrazujeme historii pokusů pouze lokálně v prohlížeči (viz quiz.html).
 
     // --------------- helpers ---------------
 
@@ -273,6 +312,10 @@ public class QuizStore {
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Kvíz nebyl nalezen."));
         }
+    }
+
+    private QuizStatus statusOrOpen(Quiz q) {
+        return (q == null || q.status() == null) ? QuizStatus.OPEN : q.status();
     }
 
     private int indexOfQuiz(List<Quiz> list, String quizId) {

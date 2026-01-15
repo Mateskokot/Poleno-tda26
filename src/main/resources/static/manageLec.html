@@ -11,10 +11,10 @@
 
 <header class="topbar">
   <div class="topbar__inner">
-    <a class="logo-link" href="/indexlec"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
-      <a class="nav__link" href="/indexlec">Domů</a>
-      <a class="nav__link" href="/courses">Kurzy</a>
-      <a class="nav__link" href="/dashboardLec">Dashboard</a>
+    <a class="logo-link" href="/indexlec.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+      <a class="nav__link" href="/indexlec.html">Domů</a>
+      <a class="nav__link" href="/courses.html">Kurzy</a>
+      <a class="nav__link" href="/dashboardLec.html">Dashboard</a>
       <a class="nav__link nav__link--button" href="#" id="logoutBtn">Odhlásit</a>
     </nav>
   </div>
@@ -82,7 +82,7 @@
 
       <label>
         Soubor (volitelné)
-        <input type="file" id="quickFile" />
+        <input type="file" id="quickFile"  multiple />
       </label>
 
       <button type="submit" id="quickSubmitBtn">Uložit</button>
@@ -124,7 +124,7 @@ function token() {
 
 function requireLogin() {
   if (!token()) {
-    location.href = "/loginLec";
+    location.href = "/loginLec.html";
     return false;
   }
   return true;
@@ -364,7 +364,8 @@ async function deleteFeed(courseId, id) {
 async function quickDetectAndCreate(courseId) {
   const titleRaw = document.getElementById("quickTitle").value;
   const contentRaw = document.getElementById("quickContent").value;
-  const file = document.getElementById("quickFile").files[0] || null;
+  const files = Array.from(document.getElementById("quickFile").files || []);
+  const file = files[0] || null;
 
   const title = String(titleRaw || "").trim();
   const content = String(contentRaw || "").trim();
@@ -373,14 +374,18 @@ async function quickDetectAndCreate(courseId) {
     throw new Error("Vyplň aspoň název nebo obsah, případně přilož soubor.");
   }
 
-  // 1) soubor má prioritu
-  if (file) {
-    const t = title || file.name;
-    await createFileMaterial(courseId, t, content || "", file);
+  // 1) soubor(y) mají prioritu
+  if (files.length) {
+    const base = title || "";
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const t = base ? (files.length === 1 ? base : `${base} – ${f.name}`) : f.name;
+      await createFileMaterial(courseId, t, content || "", f);
+    }
     return;
   }
 
-  // 2) kvíz (speciální prefix)
+// 2) kvíz (speciální prefix)
   const quizTitle = parseQuizTitle(content, title);
   if (quizTitle) {
     await createQuiz(courseId, quizTitle);
@@ -474,8 +479,8 @@ async function refreshTable() {
           <td class="small" style="opacity:.85;">${esc(detail)}</td>
           <td>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <a href="/quiz?courseId=${encodeURIComponent(id)}&quizId=${encodeURIComponent(q.id)}" target="_blank" rel="noopener noreferrer">Otevřít</a>
-              <a href="/quizManage?courseId=${encodeURIComponent(id)}&quizId=${encodeURIComponent(q.id)}">Upravit otázky</a>
+              <a href="/quiz.html?courseId=${encodeURIComponent(id)}&quizId=${encodeURIComponent(q.id)}" target="_blank" rel="noopener noreferrer">Otevřít</a>
+              <a href="/quizManage.html?courseId=${encodeURIComponent(id)}&quizId=${encodeURIComponent(q.id)}">Upravit otázky</a>
               <button type="button" data-kind="quiz" data-action="delete" data-id="${esc(q.id)}">Smazat</button>
             </div>
           </td>
@@ -520,7 +525,7 @@ async function refreshTable() {
     return tb - ta;
   });
 
-  tbody.innerHTML = rows.length ? rows.map(r => r).join("\n") : `<tr><td colspan='5' class='small'><em>Zatím bez obsahu.</em></td></tr>`;
+  tbody.innerHTML = rows.length ? rows.map(r => r.html).join("\n") : `<tr><td colspan='5' class='small'><em>Zatím bez obsahu.</em></td></tr>`;
 }
 
 document.getElementById("quickForm").addEventListener("submit", async (e) => {
@@ -571,10 +576,10 @@ document.getElementById("quizTemplateCreateForm").addEventListener("submit", asy
   try {
     const quiz = await createQuiz(courseId, title);
     setQuizTemplateStatus("Hotovo. Otevírám šablonu…");
-    location.href = `/quizManage?courseId=${encodeURIComponent(courseId)}&quizId=${encodeURIComponent(quiz.id)}`;
+    location.href = `/quizManage.html?courseId=${encodeURIComponent(courseId)}&quizId=${encodeURIComponent(quiz.id)}`;
   } catch (ex) {
     if (String(ex?.message || "") === "Unauthorized") {
-      location.href = "/loginLec";
+      location.href = "/loginLec.html";
       return;
     }
     setQuizTemplateStatus(ex?.message || "Chyba.", true);
@@ -676,7 +681,7 @@ document.querySelector("#contentTable tbody").addEventListener("click", async (e
 document.getElementById("logoutBtn").addEventListener("click", (e) => {
   e.preventDefault();
   localStorage.removeItem(TOKEN_KEY);
-  location.href = "/index";
+  location.href = "/index.html";
 });
 
 (async () => {

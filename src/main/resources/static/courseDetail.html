@@ -36,9 +36,9 @@
 
 <header class="topbar">
   <div class="topbar__inner">
-    <a class="logo-link" href="/index"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
-      <a class="nav__link" href="/courses">Zpět na kurzy</a>
-      <a class="nav__link" href="/index">Domů</a>
+    <a class="logo-link" href="/index.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+      <a class="nav__link" href="/courses.html">Zpět na kurzy</a>
+      <a class="nav__link" href="/index.html">Domů</a>
     </nav>
   </div>
 </header>
@@ -212,17 +212,20 @@ function toActivityRows(courseId, materials, quizzes, feed) {
     out.push({
       createdAt,
       title,
+      faviconUrl: (type === "LINK") ? (m.faviconUrl || null) : null,
       kind: "open",
       href
     });
   });
 
   (quizzes || []).forEach(q => {
+    const st = String(q.status || "OPEN").toUpperCase();
+    const suffix = (st === "CLOSED") ? " (uzavřeno)" : "";
     out.push({
       createdAt: q.createdAt || null,
-      title: String(q.title || "Kvíz"),
+      title: String(q.title || "Kvíz") + suffix,
       kind: "open",
-      href: `/quiz?courseId=${encodeURIComponent(courseId)}&quizId=${encodeURIComponent(q.id)}`
+      href: `/quiz.html?courseId=${encodeURIComponent(courseId)}&quizId=${encodeURIComponent(q.id)}`
     });
   });
 
@@ -259,7 +262,10 @@ function renderActivities(_courseId, rows) {
 
   tbody.innerHTML = rows.map((r, idx) => {
     const dt = fmtDate(r.createdAt);
-    const title = esc(r.title || "—");
+    const favicon = r.faviconUrl
+      ? `<img src="${esc(r.faviconUrl)}" alt="" style="width:16px; height:16px; vertical-align:middle; margin-right:6px; border-radius:3px;" onerror="this.style.display='none'">`
+      : "";
+    const title = `${favicon}${esc(r.title || "—")}`;
     const action = (r.kind === "open")
       ? `<a href="${esc(r.href)}" target="_blank" rel="noopener noreferrer">Otevřít</a>`
       : `<button type="button" data-msg-idx="${idx}">Otevřít</button>`;
