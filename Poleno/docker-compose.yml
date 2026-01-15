@@ -1,8 +1,0 @@
-services:
-  springboot:
-    build:
-      context: ./springboot
-      dockerfile: Dockerfile
-    container_name: springboot
-    ports:
-      - "8080:8080"
