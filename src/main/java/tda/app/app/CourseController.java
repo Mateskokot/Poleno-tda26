@@ -5,115 +5,50 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * REST API pro kurzy.
- *
- * - GET /api/courses
- * - GET /api/courses/{uuid}
- * - POST /api/courses (Bearer lecturer)
- * - PUT /api/courses/{uuid} (Bearer lecturer)
- * - DELETE /api/courses/{uuid} (Bearer lecturer)
- */
 @RestController
 @RequestMapping("/api/courses")
 public class CourseController {
 
-    private final CourseRepository repo;
+    // In-memory data (později DB + seed)
+    private static final List<Course> COURSES = List.of(
+            new Course(
+                    "11111111-1111-1111-1111-111111111111",
+                    "Základy HTML",
+                    "Základní tagy, struktura stránky, odkazy, formuláře.",
+                    "Lektor A"
+            ),
+            new Course(
+                    "22222222-2222-2222-2222-222222222222",
+                    "Úvod do JavaScriptu",
+                    "Proměnné, podmínky, funkce, práce s DOM.",
+                    "Lektor B"
+            )
+    );
 
-    public CourseController(CourseRepository repo) {
-        this.repo = repo;
-    }
-
-    public record CourseDto(String id, String title, String description, String lecturer) {}
-
-    public record CourseCreateUpdateRequest(String title, String description, String lecturer) {}
-
+    // GET /api/courses?search=něco
     @GetMapping
-    public List<CourseDto> list(@RequestParam(name = "search", required = false) String search) {
-        List<CourseEntity> all = repo.findAll();
+    public List<Course> list(@RequestParam(name = "search", required = false) String search) {
         if (search == null || search.isBlank()) {
-            return all.stream().map(CourseController::toDto).collect(Collectors.toList());
+            return COURSES;
         }
 
         String s = search.toLowerCase().trim();
-        return all.stream()
-                .filter(c -> (c.getTitle() != null && c.getTitle().toLowerCase().contains(s))
-                        || (c.getDescription() != null && c.getDescription().toLowerCase().contains(s))
-                        || (c.getLecturer() != null && c.getLecturer().toLowerCase().contains(s)))
-                .map(CourseController::toDto)
+        return COURSES.stream()
+                .filter(c -> c.title().toLowerCase().contains(s))
                 .collect(Collectors.toList());
     }
 
+    // GET /api/courses/{id}  (id je UUID ve stringu)
     @GetMapping("/{id}")
-    public CourseDto get(@PathVariable String id) {
-        CourseEntity e = repo.findById(id)
+    public Course get(@PathVariable String id) {
+        return COURSES.stream()
+                .filter(c -> c.id().equals(id))
+                .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
-        return toDto(e);
     }
 
-    @PostMapping
-    public CourseDto create(
-            @RequestHeader(name = "Authorization", required = false) String authHeader,
-            @RequestBody CourseCreateUpdateRequest req
-    ) {
-        requireLecturer(authHeader);
-        if (req == null || isBlank(req.title()) || isBlank(req.description()) || isBlank(req.lecturer())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing fields");
-        }
-
-        CourseEntity e = new CourseEntity(UUID.randomUUID().toString(), req.title(), req.description(), req.lecturer());
-        repo.save(e);
-        return toDto(e);
-    }
-
-    @PutMapping("/{id}")
-    public CourseDto update(
-            @RequestHeader(name = "Authorization", required = false) String authHeader,
-            @PathVariable String id,
-            @RequestBody CourseCreateUpdateRequest req
-    ) {
-        requireLecturer(authHeader);
-        CourseEntity e = repo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
-
-        if (req == null || isBlank(req.title()) || isBlank(req.description()) || isBlank(req.lecturer())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing fields");
-        }
-
-        e.setTitle(req.title());
-        e.setDescription(req.description());
-        e.setLecturer(req.lecturer());
-        repo.save(e);
-        return toDto(e);
-    }
-
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(
-            @RequestHeader(name = "Authorization", required = false) String authHeader,
-            @PathVariable String id
-    ) {
-        requireLecturer(authHeader);
-        if (!repo.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found");
-        }
-        repo.deleteById(id);
-    }
-
-    private static CourseDto toDto(CourseEntity e) {
-        return new CourseDto(e.getId(), e.getTitle(), e.getDescription(), e.getLecturer());
-    }
-
-    private static void requireLecturer(String authHeader) {
-        if (!Auth.isBearerValid(authHeader)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
-        }
-    }
-
-    private static boolean isBlank(String s) {
-        return s == null || s.isBlank();
-    }
+    // DTO/record pro kurz
+    public record Course(String id, String title, String description, String lecturer) {}
 }

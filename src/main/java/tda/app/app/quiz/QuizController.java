@@ -38,10 +38,9 @@ public class QuizController {
     public QuizStore.SubmitResponse submit(
             @PathVariable String courseId,
             @PathVariable String quizId,
-            @RequestHeader(value = "X-Student-Key", required = false) String studentKey,
             @RequestBody QuizStore.SubmitRequest req
     ) throws IOException {
-        return store.submit(courseId, quizId, req, studentKey);
+        return store.submit(courseId, quizId, req);
     }
 
     // ---------------- lecturer endpoints ----------------
@@ -115,25 +114,13 @@ public class QuizController {
     }
 
     @GetMapping("/{quizId}/results")
-    public List<QuizStore.TeacherAttemptDto> results(
+    public List<QuizResult> results(
             @RequestHeader(value = "Authorization", required = false) String auth,
             @PathVariable String courseId,
             @PathVariable String quizId
     ) {
         requireLecturer(auth);
         return store.results(courseId, quizId);
-    }
-
-    @PutMapping(value = "/{quizId}/status", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Quiz updateStatus(
-            @RequestHeader(value = "Authorization", required = false) String auth,
-            @PathVariable String courseId,
-            @PathVariable String quizId,
-            @RequestBody QuizStore.StatusRequest req
-    ) throws IOException {
-        requireLecturer(auth);
-        if (req == null) throw new IllegalArgumentException("Chybí data.");
-        return store.updateStatus(courseId, quizId, req.status());
     }
 
     private void requireLecturer(String authHeader) {

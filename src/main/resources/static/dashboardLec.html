@@ -10,12 +10,12 @@
 
 <header class="topbar">
   <div class="topbar__inner">
-    <a class="logo-link" href="/indexlec.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
-      <a href="/indexlec.html" class="nav__link">Domů</a>
-      <a href="/courses.html" class="nav__link">Kurzy</a>
-      <a href="/manageLec.html" class="nav__link">Správa kurzu</a>
+    <a class="logo-link" href="/indexlec"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+      <a href="/indexlec" class="nav__link">Domů</a>
+      <a href="/courses" class="nav__link">Kurzy</a>
+      <a href="/manageLec" class="nav__link">Správa kurzu</a>
       <a href="#upload" class="nav__link">Materiály</a>
-      <a href="/loginLec.html" class="nav__link nav__link--button" id="logoutBtn">Odhlásit</a>
+      <a href="/loginLec" class="nav__link nav__link--button" id="logoutBtn">Odhlásit</a>
     </nav>
   </div>
 </header>
@@ -43,7 +43,7 @@
 
       <label>
         Soubor
-        <input type="file" id="file" multiple required>
+        <input type="file" id="file" required>
       </label>
 
       <button type="submit">Nahrát materiál</button>
@@ -123,7 +123,7 @@
 </main>
 
 <script>
-// Musí být stejné jako v loginLec.html (js/LoginLec.js)
+// Musí být stejné jako v loginLec (js/LoginLec.js)
 const TOKEN_KEY = "lecturerToken";
 
 function getToken() {
@@ -144,7 +144,7 @@ function setDebug(text) {
 function requireLogin() {
   const token = getToken();
   if (!token) {
-    window.location.href = "/loginLec.html";
+    window.location.href = "/loginLec";
     return false;
   }
   return true;
@@ -166,7 +166,7 @@ async function loadCourses() {
   setStatus("");
   setDebug("token OK");
 
-  // ✅ STEJNĚ jako v courses.html
+  // ✅ STEJNĚ jako v courses
   const COURSES_URL = "/api/courses";
 
   try {
@@ -198,7 +198,7 @@ async function loadCourses() {
       return;
     }
 
-    // ✅ mapování podle toho, co vrací course.html: title, id, lecturer
+    // ✅ mapování podle toho, co vrací course: title, id, lecturer
     select.innerHTML = `<option value="">Vyber kurz…</option>`;
     selectLink.innerHTML = `<option value="">Vyber kurz…</option>`;
     quizCourseSelect.innerHTML = `<option value="">Vyber kurz…</option>`;
@@ -286,7 +286,7 @@ function setQuizStatsText(text) {
 function setQuizManageLink(courseId, quizId, visible) {
   const link = document.getElementById("openQuizManage");
   if (!link) return;
-  link.href = `/quizManage.html?courseId=${encodeURIComponent(courseId)}&quizId=${encodeURIComponent(quizId)}`;
+  link.href = `/quizManage?courseId=${encodeURIComponent(courseId)}&quizId=${encodeURIComponent(quizId)}`;
   link.style.display = visible ? "inline" : "none";
 }
 
@@ -465,48 +465,48 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   const courseId = document.getElementById("courseSelect").value;
   const title = document.getElementById("title").value.trim();
   const fileInput = document.getElementById("file");
-  const files = Array.from(fileInput.files || []);
 
   if (!courseId) return setStatus("Vyber kurz.", true);
   if (!title) return setStatus("Vyplň název materiálu.", true);
-  if (!files.length) return setStatus("Vyber soubor.", true);
+  if (!fileInput.files || fileInput.files.length === 0) return setStatus("Vyber soubor.", true);
 
+  setStatus("Nahrávám…");
+
+  // Upload endpoint, který materiál skutečně uloží a bude vidět i studentům
   const UPLOAD_URL = `/api/courses/${encodeURIComponent(courseId)}/materials`;
 
+  const fd = new FormData();
+  fd.append("title", title);
+  fd.append("file", fileInput.files[0]);
+
   try {
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
+    const res = await fetch(UPLOAD_URL, {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + token },
+      body: fd
+    });
 
-      setStatus(files.length === 1 ? "Nahrávám…" : `Nahrávám ${i + 1}/${files.length}…`);
-
-      const fd = new FormData();
-      fd.append("title", (files.length === 1) ? title : `${title} – ${f.name}`);
-      fd.append("file", f);
-
-      const res = await fetch(UPLOAD_URL, {
-        method: "POST",
-        headers: { "Authorization": "Bearer " + token },
-        body: fd
-      });
-
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        setStatus(`Nahrání se nepovedlo (HTTP ${res.status}). ` + (txt || ""), true);
-        setDebug(`POST ${UPLOAD_URL} -> ${res.status}`);
-        return;
-      }
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      setStatus(`Nahrání se nepovedlo (HTTP ${res.status}). ` + (txt || ""), true);
+      setDebug(`POST ${UPLOAD_URL} -> ${res.status}`);
+      return;
     }
 
-    setStatus(files.length === 1 ? "Hotovo. Materiál byl nahrán." : `Hotovo. Nahráno ${files.length} souborů.`);
-    setDebug(`POST ${UPLOAD_URL} -> 200/201 x${files.length}`);
+    setStatus("Hotovo. Materiál byl nahrán.");
+    setDebug(`POST ${UPLOAD_URL} -> 200/201`);
     e.target.reset();
 
+    // po nahrání rovnou obnov seznam
     await refreshMaterialsFromSelected();
+
   } catch (err) {
-    setStatus("Chyba připojení k serveru (zkontroluj, že aplikace běží a stránka není otevřená jako file://)", true);
+    // Sem se to dostane typicky jen když fetch úplně spadne (např. stránka otevřená jako file://)
+    setStatus("Chyba připojení k serveru (fetch selhal). Otevři stránku přes http://localhost:8080.", true);
     setDebug("upload fetch failed: " + (err?.message ?? ""));
   }
 });
+
 // při změně kurzu okamžitě zobraz materiály
 document.getElementById("courseSelect").addEventListener("change", () => {
   refreshMaterialsFromSelected();
@@ -568,7 +568,7 @@ async function refreshQuizStats() {
     setQuizManageLink(courseId, quizId, true);
   } catch (err) {
     if (String(err?.message || "") === "Unauthorized") {
-      location.href = "/loginLec.html";
+      location.href = "/loginLec";
       return;
     }
     setQuizStatsText(err?.message || "Chyba.");
@@ -635,7 +635,7 @@ document.getElementById("linkForm").addEventListener("submit", async (e) => {
 
 document.getElementById("logoutBtn").addEventListener("click", () => {
   localStorage.removeItem(TOKEN_KEY);
-  location.href = "/loginLec.html";
+  location.href = "/loginLec";
 });
 
 (async () => {

@@ -10,11 +10,11 @@
 
 <header class="topbar">
   <div class="topbar__inner">
-    <a class="logo-link" href="/indexlec.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
-      <a href="/indexlec.html" class="nav__link">Domů</a>
-      <a href="/manageLec.html" class="nav__link">Správa kurzu</a>
-      <a href="/dashboardLec.html" class="nav__link">Dashboard</a>
-      <a href="/loginLec.html" class="nav__link nav__link--button" id="logout">Odhlásit</a>
+    <a class="logo-link" href="/indexlec"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+      <a href="/indexlec" class="nav__link">Domů</a>
+      <a href="/manageLec" class="nav__link">Správa kurzu</a>
+      <a href="/dashboardLec" class="nav__link">Dashboard</a>
+      <a href="/loginLec" class="nav__link nav__link--button" id="logout">Odhlásit</a>
     </nav>
   </div>
 </header>
@@ -32,7 +32,7 @@
       <li>připravovat obsah pro studenty</li>
     </ul>
 
-    <a href="/manageLec.html" class="nav__link nav__link--button">
+    <a href="/manageLec" class="nav__link nav__link--button">
       Přejít na správu kurzu
     </a>
   </div>
@@ -43,7 +43,7 @@ const TOKEN_KEY = "lecturerToken";
 
 // ochrana stránky
 if (!localStorage.getItem(TOKEN_KEY)) {
-  window.location.href = "/loginLec.html";
+  window.location.href = "/loginLec";
 }
 
 // odhlášení

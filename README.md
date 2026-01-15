@@ -1,11 +1,9 @@
-# Tour de App – Think Different Academy (verze 14.6)
+# Tour de App – Think Different Academy (verze 14.2)
 
-## Tým
-- **Název týmu:** Poleno
+## Tým (vyplňte před odevzdáním)
+- **Název týmu:** DOPLŇTE
 - **Členové a role:**
-  - Matyáš Neckář – backend & frontend 
-  - anotnín mráz -kontrola ověření docker coookies
-  - daniel herkus - podpora grafické zpracování
+  - DOPLŇTE – (např. backend, frontend, UI/UX, testování)
 
 ## Použité technologie
 - Java 17
@@ -26,10 +24,8 @@
 2. Aplikace poběží na `http://localhost:8080/`.
 
 ### Doba spuštění / nasazení
-- **Lokální spuštění:**
-  - První spuštění (stažení Maven závislostí): typicky 1–3 minuty dle připojení.
-  - Další spuštění: obvykle 10–30 sekund.
-- **Nasazení v hodnoticím systému:** dle zadání probíhá z commitu a trvá řádově minuty (doporučení je odevzdat s předstihem).
+- Lokálně záleží na výkonu počítače. První spuštění (stažení závislostí) bývá delší; další spuštění bývá výrazně rychlejší.
+- V hodnoticím systému probíhá nasazení z commitu a dle zadání trvá řádově minuty (doporučení je odevzdat s předstihem).
 
 ## Přihlašovací údaje (lektor)
 - **Uživatelské jméno:** `lecturer`
