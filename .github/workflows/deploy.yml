@@ -2,7 +2,6 @@ name: Build and upload to Tour de Cloud
 
 on:
   push:
-    branches: [ "main" ]
 
 jobs:
   deploy:
@@ -11,7 +10,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Upload app to TdC
-        uses: Student-Cyber-Games/upload-app@v1
+      - name: Upload to TdA
+        uses: Student-Cyber-Games/upload-app@tda-26
         with:
           tdc_token: ${{ secrets.TDC_TOKEN }}
