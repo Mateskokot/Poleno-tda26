@@ -1,10 +1,11 @@
 # $schema: https://portalbush.tourde.cloud/static/schema.json
+# $schema: https://portalbush.tourde.cloud/static/schema.json
 
 exposedPort: 8080
 
 containers:
   - name: app
-    image: app
+    image: registry.tourde.cloud/poleno/app
     tag: latest
     port: 8080
 
@@ -12,8 +13,5 @@ build:
   - name: app
     context: .
     dockerfile: Dockerfile
-
-
-
 
 
