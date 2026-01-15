@@ -10,3 +10,4 @@ if not exist uploads (
 )
 
 mvnw.cmd spring-boot:run
+
