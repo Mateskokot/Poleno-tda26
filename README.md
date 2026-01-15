@@ -1,7 +1,7 @@
-# Tour de App – Think Different Academy (verze 14.2)
+# Tour de App – Think Different Academy (verze final)
 
 ## Tým (vyplňte před odevzdáním)
-- **Název týmu:** DOPLŇTE
+- **Název týmu:** Poleno
 - **Členové a role:**
   - DOPLŇTE – (např. backend, frontend, UI/UX, testování)
 
