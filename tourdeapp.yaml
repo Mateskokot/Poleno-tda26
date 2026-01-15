@@ -1,5 +1,4 @@
 # $schema: https://portalbush.tourde.cloud/static/schema.json
-# $schema: https://portalbush.tourde.cloud/static/schema.json
 
 exposedPort: 8080
 
@@ -10,6 +9,5 @@ build:
 
 containers:
   - name: app
-    image: registry.tourde.cloud/poleno/app:latest
+    image: registry.tourde.cloud/poleno/app
     port: 8080
-
