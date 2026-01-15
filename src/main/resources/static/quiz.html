@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kvíz</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="topbar__inner">
+    <a class="logo-link" href="/index.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+      <a class="nav__link" id="backLink" href="#">Zpět na kurz</a>
+      <a class="nav__link" href="/index.html">Domů</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <h1 id="title">Kvíz</h1>
+  <p id="err" class="small" style="color:#ff6b6b;"></p>
+
+  <section class="card" id="myResultsCard" style="margin-bottom:16px;" hidden>
+    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+      <h2 style="margin:0;">Moje výsledky</h2>
+      <button type="button" id="refreshMyResultsBtn">Obnovit</button>
+    </div>
+    <p id="myResultsSummary" class="small" style="margin-top:8px; opacity:.9;">—</p>
+    <div id="myResultsList" class="small" style="margin-top:10px;"></div>
+    <p class="small" style="margin-top:10px; opacity:.75;">Poznámka: Historie vašich pokusů se ukládá lokálně v tomto prohlížeči, takže je uvidíte i po uzavření kvízu (dokud nesmažete data prohlížeče).</p>
+  </section>
+
+  <section class="card" id="quizCard">
+    <p class="small">Načítám…</p>
+  </section>
+
+  <section class="card" style="margin-top:16px;" id="resultCard" hidden>
+    <h2 style="margin-top:0;">Výsledek</h2>
+    <p id="resultText"></p>
+  </section>
+</main>
+
+<script>
+const ATTEMPTS_PREFIX = "tda_quiz_attempts";
+
+function qp(name) {
+  return new URLSearchParams(location.search).get(name);
+}
+
+function esc(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function setErr(msg) {
+  document.getElementById("err").textContent = msg || "";
+}
+
+function attemptsKey(courseId, quizId) {
+  return `${ATTEMPTS_PREFIX}:${courseId}:${quizId}`;
+}
+
+function loadAttempts(courseId, quizId) {
+  try {
+    const raw = localStorage.getItem(attemptsKey(courseId, quizId));
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAttempts(courseId, quizId, list) {
+  const safe = Array.isArray(list) ? list.slice(0, 100) : [];
+  localStorage.setItem(attemptsKey(courseId, quizId), JSON.stringify(safe));
+}
+
+function addAttempt(courseId, quizId, resp) {
+  const list = loadAttempts(courseId, quizId);
+  list.unshift({
+    submittedAt: new Date().toISOString(),
+    totalQuestions: Number(resp?.totalQuestions || 0),
+    correctQuestions: Number(resp?.correctQuestions || 0),
+    scorePercent: Number(resp?.scorePercent || 0)
+  });
+  saveAttempts(courseId, quizId, list);
+  return list;
+}
+
+async function fetchJson(url, opts) {
+  const res = await fetch(url, opts || {});
+  const ct = (res.headers.get("content-type") || "").toLowerCase();
+
+  if (!res.ok) {
+    const body = ct.includes("application/json") ? await res.json().catch(() => null) : await res.text().catch(() => "");
+    const msg = (body && body.error) ? body.error : (typeof body === "string" ? body : "");
+    throw new Error(`HTTP ${res.status}${msg ? " – " + msg : ""}`);
+  }
+
+  if (!ct.includes("application/json")) {
+    const text = await res.text().catch(() => "");
+    throw new Error("Server nevrátil JSON. " + text.slice(0, 100));
+  }
+  return await res.json();
+}
+
+function buildForm(quiz) {
+  const root = document.getElementById("quizCard");
+
+  const quizStatus = String(quiz?.status || "OPEN").toUpperCase();
+  const isClosed = quizStatus === "CLOSED";
+
+  if (!quiz || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
+    root.innerHTML = `
+      <p class="small"><em>Tento kvíz zatím nemá žádné otázky.</em></p>
+    `;
+    return;
+  }
+
+  const form = document.createElement("form");
+  form.className = "form";
+  form.id = "quizForm";
+
+  if (isClosed) {
+    const banner = document.createElement("div");
+    banner.className = "card";
+    banner.style.marginTop = "0";
+    banner.innerHTML = `<strong>Kvíz je uzavřený.</strong><div class="small" style="margin-top:6px; opacity:.85;">Nový pokus už nelze odevzdat, ale své výsledky uvidíte výše.</div>`;
+    form.appendChild(banner);
+  }
+
+  quiz.questions.forEach((q, idx) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.style.marginTop = "12px";
+    card.dataset.qid = q.id;
+
+    const type = String(q.type || "SINGLE").toUpperCase();
+    const isMulti = type === "MULTI";
+
+    card.innerHTML = `
+      <strong>${idx + 1}. ${esc(q.text || "")}</strong>
+      <div class="small" style="margin-top:8px; opacity:.85;">${isMulti ? "Více možností" : "Jedna možnost"}</div>
+      <div style="margin-top:10px;" class="opts"></div>
+    `;
+
+    const opts = card.querySelector(".opts");
+    (q.options || []).forEach(o => {
+      const row = document.createElement("label");
+      row.style.display = "block";
+      row.style.margin = "8px 0";
+
+      const input = document.createElement("input");
+      input.type = isMulti ? "checkbox" : "radio";
+      input.name = q.id;
+      input.value = o.id;
+      input.style.marginRight = "8px";
+
+      const span = document.createElement("span");
+      span.textContent = o.text || "";
+      span.dataset.oid = o.id;
+
+      row.appendChild(input);
+      row.appendChild(span);
+      opts.appendChild(row);
+    });
+
+    form.appendChild(card);
+  });
+
+  const btn = document.createElement("button");
+  btn.type = "submit";
+  btn.textContent = "Odeslat";
+  btn.disabled = isClosed;
+  btn.style.marginTop = "12px";
+  form.appendChild(btn);
+
+  const submitStatusEl = document.createElement("p");
+  submitStatusEl.id = "submitStatus";
+  submitStatusEl.className = "small";
+  submitStatusEl.style.marginTop = "8px";
+  form.appendChild(submitStatusEl);
+
+  root.innerHTML = "";
+  root.appendChild(form);
+
+  if (isClosed) {
+    // pro uzavřený kvíz zakážeme klikání do otázek (jen zobrazení)
+    root.querySelectorAll("input").forEach(i => i.disabled = true);
+  }
+}
+
+function collectAnswers(quiz) {
+  const answers = {};
+  for (const q of (quiz.questions || [])) {
+    const type = String(q.type || "SINGLE").toUpperCase();
+    const nodes = document.querySelectorAll(`input[name='${CSS.escape(q.id)}']`);
+    const sel = [];
+    nodes.forEach(n => {
+      if (n.checked) sel.push(n.value);
+    });
+    // u SINGLE to bude max 1; u MULTI více
+    answers[q.id] = sel;
+  }
+  return answers;
+}
+
+function showResult(resp) {
+  const card = document.getElementById("resultCard");
+  card.hidden = false;
+  document.getElementById("resultText").textContent =
+    `Správně ${resp.correctQuestions} z ${resp.totalQuestions} (${resp.scorePercent}%).`;
+}
+
+function markAnswers(resp) {
+  const details = resp.details || [];
+  const byQ = new Map(details.map(d => [d.questionId, d]));
+
+  document.querySelectorAll("[data-qid]").forEach(card => {
+    const qid = card.dataset.qid;
+    const d = byQ.get(qid);
+    if (!d) return;
+
+    const correctSet = new Set(d.correctOptionIds || []);
+    const selectedSet = new Set(d.selectedOptionIds || []);
+
+    // highlight each option text
+    card.querySelectorAll("span[data-oid]").forEach(span => {
+      const oid = span.dataset.oid;
+      const isCorrect = correctSet.has(oid);
+      const isSelected = selectedSet.has(oid);
+      // background + border
+      if (isCorrect) {
+        span.style.background = "rgba(46, 204, 113, 0.18)";
+        span.style.border = "1px solid rgba(46, 204, 113, 0.45)";
+        span.style.padding = "2px 6px";
+        span.style.borderRadius = "8px";
+      }
+      if (isSelected && !isCorrect) {
+        span.style.background = "rgba(231, 76, 60, 0.18)";
+        span.style.border = "1px solid rgba(231, 76, 60, 0.45)";
+        span.style.padding = "2px 6px";
+        span.style.borderRadius = "8px";
+      }
+    });
+
+    // disable inputs after submit
+    card.querySelectorAll("input").forEach(i => i.disabled = true);
+
+    // per-question badge
+    const badge = document.createElement("div");
+    badge.className = "small";
+    badge.style.marginTop = "10px";
+    badge.style.fontWeight = "600";
+    badge.textContent = d.correct ? "Správně" : "Špatně";
+    badge.style.color = d.correct ? "#2ecc71" : "#ff6b6b";
+    card.appendChild(badge);
+  });
+}
+
+function renderMyResults(list) {
+  const card = document.getElementById("myResultsCard");
+  const summaryEl = document.getElementById("myResultsSummary");
+  const root = document.getElementById("myResultsList");
+  const rows = Array.isArray(list) ? list : [];
+
+  card.hidden = false;
+
+  const attempts = rows.length;
+  let avg = 0;
+  let best = 0;
+  if (attempts > 0) {
+    const percents = rows.map(r => Number(r.scorePercent || 0));
+    avg = percents.reduce((a, b) => a + b, 0) / attempts;
+    best = Math.max(...percents);
+  }
+
+  summaryEl.textContent = `Pokusů: ${attempts} • Průměr: ${avg.toFixed(1)}% • Nejlepší: ${best.toFixed(1)}%`;
+
+  if (attempts === 0) {
+    root.innerHTML = "<em>Zatím nemáte žádné pokusy.</em>";
+    return;
+  }
+
+  root.innerHTML = rows.map(r => {
+    const when = r.submittedAt ? new Date(r.submittedAt).toLocaleString("cs-CZ") : "";
+    const t = Number(r.totalQuestions || 0);
+    const c = Number(r.correctQuestions || 0);
+    const p = Number(r.scorePercent || (t > 0 ? (c * 100.0 / t) : 0));
+    return `• ${esc(when)} – ${c}/${t} (${p.toFixed(1)}%)`;
+  }).join("<br>");
+}
+
+function refreshMyResults(courseId, quizId) {
+  const list = loadAttempts(courseId, quizId);
+  renderMyResults(list);
+}
+
+(async () => {
+  const courseId = qp("courseId");
+  const quizId = qp("quizId");
+
+  if (!courseId || !quizId) {
+    setErr("Chybí parametr courseId nebo quizId.");
+    document.getElementById("quizCard").innerHTML = "";
+    return;
+  }
+
+  document.getElementById("backLink").href = `/courseDetail.html?id=${encodeURIComponent(courseId)}`;
+
+  try {
+    const quiz = await fetchJson(`/api/courses/${encodeURIComponent(courseId)}/quizzes/${encodeURIComponent(quizId)}`);
+    document.getElementById("title").textContent = quiz.title ? `Kvíz: ${quiz.title}` : "Kvíz";
+    buildForm(quiz);
+
+    // Moje výsledky – ukládáme lokálně do prohlížeče (bez serverové identifikace)
+    const refreshBtn = document.getElementById("refreshMyResultsBtn");
+    const refresh = () => refreshMyResults(courseId, quizId);
+    if (refreshBtn) refreshBtn.addEventListener("click", refresh);
+    refresh();
+
+    const form = document.getElementById("quizForm");
+    if (!form) return;
+
+    const status = String(quiz?.status || "OPEN").toUpperCase();
+    if (status === "CLOSED") {
+      // uzavřený kvíz – žádné odevzdání
+      return;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setErr("");
+      const status = document.getElementById("submitStatus");
+      if (status) status.textContent = "Odesílám…";
+
+      try {
+        const answers = collectAnswers(quiz);
+        const resp = await fetchJson(`/api/courses/${encodeURIComponent(courseId)}/quizzes/${encodeURIComponent(quizId)}/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ answers })
+        });
+
+        if (status) status.textContent = "Hotovo.";
+        showResult(resp);
+        markAnswers(resp);
+        addAttempt(courseId, quizId, resp);
+        refresh();
+      } catch (ex) {
+        if (status) status.textContent = "";
+        setErr(ex?.message || "Chyba při odeslání.");
+      }
+    });
+  } catch (e) {
+    console.error(e);
+    setErr("Chyba: " + (e?.message || "neznámá"));
+    document.getElementById("quizCard").innerHTML = "";
+  }
+})();
+</script>
+
+
+
+<footer class="footer">
+  <div class="container">
+    <small>© Think Different Academy</small>
+  </div>
+</footer>
+
+</body>
+</html>
