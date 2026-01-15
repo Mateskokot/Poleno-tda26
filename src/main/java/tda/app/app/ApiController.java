@@ -8,7 +8,7 @@ import java.util.Map;
 @RestController
 public class ApiController {
 
-    @GetMapping("/api")
+    @GetMapping({"/api", "/api/"})
     public Map<String, String> apiRoot() {
         return Map.of("organization", "Student Cyber Games");
     }

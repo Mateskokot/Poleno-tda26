@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 
-import java.util.NoSuchElementException;
 import java.util.Map;
 
 /**
@@ -27,10 +26,5 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> illegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage() == null ? "Bad Request" : ex.getMessage()));
-    }
-
-    @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<Map<String, String>> notFound(NoSuchElementException ex) {
-        return ResponseEntity.status(404).body(Map.of("error", ex.getMessage() == null ? "Not Found" : ex.getMessage()));
     }
 }

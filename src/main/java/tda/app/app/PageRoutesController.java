@@ -2,7 +2,9 @@ package tda.app.app;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+
+
+import static org.springframework.http.MediaType.TEXT_HTML_VALUE;
 
 /**
  * Mapování URL podle požadavků zadání (Fáze 0 a 1).
@@ -13,20 +15,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class PageRoutesController {
 
-    @GetMapping("/")
+    @GetMapping(value = "/", produces = TEXT_HTML_VALUE)
     public String root() {
         return "forward:/index.html";
-    }
-
-    @GetMapping("/courses")
-    public String courses() {
-        return "forward:/courses.html";
-    }
-
-    @GetMapping("/courses/{id}")
-    public String courseDetail(@PathVariable String id) {
-        // courseDetail.html používá query parametr id
-        return "redirect:/courseDetail.html?id=" + id;
     }
 
     @GetMapping("/login")
