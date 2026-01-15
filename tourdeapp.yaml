@@ -1,12 +1,18 @@
-FROM eclipse-temurin:25-jre
+# $schema: https://portalbush.tourde.cloud/static/schema.json
 
-WORKDIR /app
+exposedPort: 8080
 
-COPY target/*.jar app.jar
+containers:
+  - name: app
+    image: app
+    tag: latest
+    port: 8080
 
-EXPOSE 8080
+build:
+  - name: app
+    context: .
+    dockerfile: Dockerfile
 
-ENTRYPOINT ["java","-jar","app.jar"]
 
 
 
