@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Think different Academy</title>
+
+  <style>
+    :root{
+      --bg: #0f172a;
+      --surface: rgba(255,255,255,0.06);
+      --surface-2: rgba(255,255,255,0.10);
+      --text: #e5e7eb;
+      --muted: #cbd5e1;
+      --border: rgba(255,255,255,0.12);
+    }
+
+    *{ box-sizing: border-box; }
+
+    html, body{
+      height: 100%;
+    }
+
+    body{
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ===== Horní lišta ===== */
+    header.topbar{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .topbar__inner{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    /* ===== Logo ===== */
+    .brand{
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+    }
+
+    .brand__logo{
+      height: 44px; /* velikost loga */
+      width: auto;
+      display: block;
+    }
+
+    /* ===== Navigace ===== */
+    nav.nav{
+      display: flex;
+      align-items: center;
+      gap: 12px; /* mezera mezi Kurzy a Přihlášením */
+    }
+
+    .nav__link{
+      color: var(--text);
+      text-decoration: none;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      transition: background .15s ease, border-color .15s ease;
+      white-space: nowrap;
+      font-size: 15px;
+    }
+
+    .nav__link:hover{
+      background: var(--surface);
+      border-color: var(--border);
+    }
+
+    .nav__link--button{
+      background: var(--surface-2);
+      border-color: var(--border);
+      font-weight: 500;
+    }
+
+    /* ===== Obsah ===== */
+    main.container{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    h1{
+      margin: 20px 0 10px;
+      font-size: 28px;
+    }
+
+    p{
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .card{
+      margin-top: 16px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 16px;
+    }
+
+    .card h2{
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .card a{
+      color: var(--text);
+    }
+
+    /* ===== Footer ===== */
+    footer.footer{
+      border-top: 1px solid var(--border);
+      margin-top: 24px;
+      padding: 18px 0;
+      color: var(--muted);
+    }
+
+    /* ===== Responsivita ===== */
+    @media (max-width: 720px){
+      .topbar__inner{
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      nav.nav{
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .brand__logo{
+        height: 38px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <!-- Logo -->
+      <a class="brand" href="index.html">
+        <img
+          class="brand__logo"
+          src="Think-different-Academy_LOGO_oficialni_1_dark-mode.png"
+          alt="Think different Academy"
+        />
+      </a>
+
+      <!-- Navigace -->
+      <nav class="nav">
+        <a class="nav__link" href="courses.html">Kurzy</a>
+        <a class="nav__link nav__link--button" href="/lecture/login.html">
+          Učitel / Lektor – přihlášení
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>Vítejte v Think different Academy</h1>
+    <p>
+      Platforma pro školní odevzdávání prací, testy a správu kurzů.
+    </p>
+
+    <section class="card">
+      <h2>Rychlé odkazy</h2>
+      <ul>
+        <li><a href="courses.html">Seznam kurzů</a></li>
+        <li><a href="/lecture/login.html">Přihlášení učitele / lektora</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <small>© Think different Academy</small>
+    </div>
+  </footer>
+</body>
+</html>
