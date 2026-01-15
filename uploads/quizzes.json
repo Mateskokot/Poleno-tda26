@@ -1,0 +1,27 @@
+{
+  "11111111-1111-1111-1111-111111111111" : [ {
+    "id" : "11f9280e-30a6-414a-bde3-594094a2d95b",
+    "courseId" : "11111111-1111-1111-1111-111111111111",
+    "title" : "Hrani league of legends",
+    "createdAt" : "2026-01-11T14:18:54.672869200Z",
+    "questions" : [ {
+      "id" : "0e18182f-5606-44ac-83a7-92b7c1f30d48",
+      "type" : "MULTI",
+      "text" : "Lmao",
+      "options" : [ {
+        "id" : "49fd5cde-8716-4606-837e-9120e011e832",
+        "text" : "Lmao1?"
+      }, {
+        "id" : "6515f2c0-3e1d-434a-8c17-d803b1c98c3f",
+        "text" : "Lmao2?"
+      } ],
+      "correctOptionIds" : [ "49fd5cde-8716-4606-837e-9120e011e832" ]
+    } ]
+  }, {
+    "id" : "1dcda5f2-d3b3-471c-a19e-1424e54965aa",
+    "courseId" : "11111111-1111-1111-1111-111111111111",
+    "title" : "Hrani lolka",
+    "createdAt" : "2026-01-11T14:20:40.861757800Z",
+    "questions" : [ ]
+  } ]
+}
