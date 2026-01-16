@@ -10,8 +10,17 @@
 
 <header class="topbar">
   <div class="topbar__inner">
-    <a class="logo-link" href="/indexlec.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+    <a class="logo-link" href="/indexlec.html">
+      <img src="/images/logo.png" alt="Think Different Academy">
+    </a>
+
+    <nav class="nav">
       <a href="/indexlec.html" class="nav__link">Domů</a>
+
+      <a href="/addCourse.html" class="nav__link">
+        + Přidat kurz
+      </a>
+
       <a href="/manageLec.html" class="nav__link">Správa kurzu</a>
       <a href="/dashboardLec.html" class="nav__link">Dashboard</a>
       <a href="/loginLec.html" class="nav__link nav__link--button" id="logout">Odhlásit</a>
@@ -23,9 +32,7 @@
   <h1>Vítej, lektore</h1>
 
   <div class="card">
-    <p>
-      Zde můžeš:
-    </p>
+    <p>Zde můžeš:</p>
     <ul class="small">
       <li>spravovat své kurzy</li>
       <li>nahrávat studijní materiály</li>
@@ -51,8 +58,6 @@ document.getElementById("logout").addEventListener("click", () => {
   localStorage.removeItem(TOKEN_KEY);
 });
 </script>
-
-
 
 <footer class="footer">
   <div class="container">
