@@ -4,15 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kurzy</title>
-
   <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
-
 <header class="topbar">
   <div class="topbar__inner">
-    <a class="logo-link" href="/index.html"><img src="/images/logo.png" alt="Think Different Academy"></a><nav class="nav">
+    <a class="logo-link" href="/index.html">
+      <img src="/images/logo.png" alt="Think Different Academy">
+    </a>
+    <nav class="nav">
       <a class="nav__link" href="/index.html">Domů</a>
     </nav>
   </div>
@@ -36,59 +37,58 @@
 </footer>
 
 <script>
-/* =========================
-   Načtení kurzů
-   ========================= */
 async function loadCourses() {
-  const res = await fetch("/api/courses");
-  if (!res.ok) throw new Error("Nelze načíst kurzy");
+  const res = await fetch("/api/courses", { method: "GET" });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    throw new Error(`Nelze načíst kurzy (${res.status}): ${txt}`);
+  }
   return await res.json();
 }
 
-/* =========================
-   Otevření detailu
-   ========================= */
 function openDetail(courseId) {
-  window.location.assign(
-    `/courseDetail.html?id=${encodeURIComponent(courseId)}`
-  );
+  window.location.assign(`/courseDetail.html?id=${encodeURIComponent(courseId)}`);
 }
 
-/* =========================
-   Vykreslení seznamu
-   ========================= */
 function renderCourses(courses) {
   const root = document.getElementById("courses");
   root.innerHTML = "";
 
-  if (!courses || courses.length === 0) {
+  if (!Array.isArray(courses)) {
+    root.innerHTML =
+      "<p class='small' style='color:#ff6b6b;'>API nevrátilo seznam kurzů (očekávám pole).</p>";
+    return;
+  }
+
+  if (courses.length === 0) {
     root.innerHTML =
       "<p class='small'><em>Žádné kurzy nejsou k dispozici.</em></p>";
     return;
   }
 
   courses.forEach(c => {
+    const id = c.id ?? c.uuid ?? c.courseId;
+    const title = c.title ?? c.name ?? "";
+    const description = c.description ?? "";
+    const lecturer = c.lecturer ?? c.lecturerName ?? "";
+
     const card = document.createElement("div");
     card.className = "card";
-    card.style.cursor = "pointer";
+    card.style.cursor = id ? "pointer" : "default";
 
-    // JEDINÝ klik → detail
-    card.onclick = () => openDetail(c.id);
+    if (id) card.onclick = () => openDetail(id);
 
     card.innerHTML = `
-      <h3>${c.title ?? ""}</h3>
-      <p>${c.description ?? ""}</p>
-      <p class="small">Lektor: ${c.lecturer ?? ""}</p>
-      <p class="small" style="opacity:.6;">Klikni pro detail kurzu</p>
+      <h3>${title}</h3>
+      <p>${description}</p>
+      <p class="small">Lektor: ${lecturer}</p>
+      ${id ? "<p class='small' style='opacity:.6;'>Klikni pro detail kurzu</p>" : ""}
     `;
 
     root.appendChild(card);
   });
 }
 
-/* =========================
-   Start
-   ========================= */
 (async () => {
   const search = document.getElementById("search");
   const root = document.getElementById("courses");
@@ -100,12 +100,9 @@ function renderCourses(courses) {
     search.addEventListener("input", () => {
       const q = (search.value || "").toLowerCase().trim();
       renderCourses(
-        courses.filter(c =>
-          (c.title || "").toLowerCase().includes(q)
-        )
+        courses.filter(c => (c.title ?? c.name ?? "").toLowerCase().includes(q))
       );
     });
-
   } catch (e) {
     root.innerHTML =
       "<p class='small' style='color:#ff6b6b;'>Chyba při načítání kurzů</p>";
@@ -113,6 +110,5 @@ function renderCourses(courses) {
   }
 })();
 </script>
-
 </body>
 </html>
