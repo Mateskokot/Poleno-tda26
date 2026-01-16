@@ -5,36 +5,38 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 /**
- * Mapování URL podle požadavků zadání (Fáze 0 a 1).
- *
- * Zadání často očekává cesty jako /courses, /courses/{uuid}, /login, /dashboard.
- * V aplikaci používáme statické HTML stránky, proto tyto cesty jen přesměrujeme.
+ * Mapování URL pro statické HTML stránky.
+ * API je oddělené pod /api/**
  */
 @Controller
 public class PageRoutesController {
 
-    @GetMapping("/")
+    // Home page – test TdA očekává HTML
+    @GetMapping(value = {"/", ""})
     public String root() {
         return "forward:/index.html";
     }
 
-    @GetMapping("/courses")
+    // Seznam kurzů – HTML stránka
+    @GetMapping(value = {"/courses", "/courses/"})
     public String courses() {
         return "forward:/courses.html";
     }
 
-    @GetMapping("/courses/{id}")
+    // Detail kurzu – přesměrování na statické HTML s query parametrem
+    @GetMapping(value = {"/courses/{id}", "/courses/{id}/"})
     public String courseDetail(@PathVariable String id) {
-        // courseDetail.html používá query parametr id
         return "redirect:/courseDetail.html?id=" + id;
     }
 
-    @GetMapping("/login")
+    // Přihlášení lektora
+    @GetMapping(value = {"/login", "/login/"})
     public String login() {
         return "forward:/loginLec.html";
     }
 
-    @GetMapping("/dashboard")
+    // Dashboard lektora
+    @GetMapping(value = {"/dashboard", "/dashboard/"})
     public String dashboard() {
         return "forward:/dashboardLec.html";
     }
