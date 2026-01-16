@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Přidat kurz</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__inner">
+    <a class="logo-link" href="/indexlec.html">
+      <img src="/images/logo.png" alt="Think Different Academy">
+    </a>
+
+    <nav class="nav">
+      <a href="/indexlec.html" class="nav__link">Domů</a>
+      <a href="/addCourse.html" class="nav__link nav__link--active">+ Přidat kurz</a>
+      <a href="/manageLec.html" class="nav__link">Správa kurzu</a>
+      <a href="/dashboardLec.html" class="nav__link">Dashboard</a>
+      <a href="/loginLec.html" class="nav__link nav__link--button" id="logout">Odhlásit</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  <h1>Přidat nový kurz</h1>
+
+  <div class="card">
+    <form id="courseForm">
+
+      <div class="form-group">
+        <label for="name">Název kurzu</label>
+        <input
+          type="text"
+          id="name"
+          name="name"
+          required
+          placeholder="Např. Základy programování"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Popis kurzu</label>
+        <textarea
+          id="description"
+          name="description"
+          rows="4"
+          required
+          placeholder="Stručný popis kurzu…"
+        ></textarea>
+      </div>
+
+      <button type="submit" class="nav__link nav__link--button">
+        Vytvořit kurz
+      </button>
+
+      <p id="msg" class="form-message"></p>
+    </form>
+  </div>
+</main>
+
+<script>
+const TOKEN_KEY = "lecturerToken";
+
+// ochrana stránky
+if (!localStorage.getItem(TOKEN_KEY)) {
+  window.location.href = "/loginLec.html";
+}
+
+// odhlášení
+document.getElementById("logout").addEventListener("click", () => {
+  localStorage.removeItem(TOKEN_KEY);
+});
+
+// odeslání formuláře
+const form = document.getElementById("courseForm");
+const msg = document.getElementById("msg");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  msg.textContent = "Vytvářím kurz…";
+
+  const payload = {
+    name: document.getElementById("name").value.trim(),
+    description: document.getElementById("description").value.trim()
+  };
+
+  try {
+    const res = await fetch("/courses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch {}
+
+    if (!res.ok) {
+      msg.textContent = `Chyba (${res.status}): ${text}`;
+      msg.style.color = "red";
+      return;
+    }
+
+    msg.textContent = "Kurz byl úspěšně vytvořen ✔";
+    msg.style.color = "green";
+    form.reset();
+
+    // volitelně: přesměrování po 1,5 s
+    setTimeout(() => {
+      window.location.href = "/manageLec.html";
+    }, 1500);
+
+  } catch (err) {
+    msg.textContent = "Chyba připojení k serveru";
+    msg.style.color = "red";
+  }
+});
+</script>
+
+<footer class="footer">
+  <div class="container">
+    <small>© Think Different Academy</small>
+  </div>
+</footer>
+
+</body>
+</html>
